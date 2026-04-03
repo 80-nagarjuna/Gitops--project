@@ -4,13 +4,17 @@ metadata:
   name: {{ include "gitops-app.fullname" . }}
   labels:
     {{- include "gitops-app.labels" . | nindent 4 }}
+
 spec:
   type: NodePort
+
   ports:
-    - port: 5000
+    - name: http
+      port: 5000
       targetPort: 5000
       protocol: TCP
       nodePort: 30008
-      name: http
+
   selector:
-    {{- include "gitops-app.selectorLabels" . | nindent 4 }}
+    app: gitops-app
+    version: {{ .Values.version }}
