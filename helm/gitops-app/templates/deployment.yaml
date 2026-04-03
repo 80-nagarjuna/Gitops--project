@@ -60,9 +60,9 @@ spec:
           
           env:
             - name: APP_VERSION
-              value: {{ .Values.image.tag | quote }}
+              value: {{ .Values.image.tag | default "v1" | quote }}
             - name: APP_COLOR
-              value: {{ .Values.version | quote }}
+              value: {{ .Values.version | default "blue" | quote }}
 
           ports:
             - name: http
