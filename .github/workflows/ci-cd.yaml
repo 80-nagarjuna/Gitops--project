@@ -1,0 +1,38 @@
+name: CI-CD Pipeline
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Image Tag
+        id: vars
+        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and Push Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/gitops-app:$TAG ./app
+          docker push ${{ secrets.DOCKER_USERNAME }}/gitops-app:$TAG
+
+      - name: Update Helm values
+        run: |
+          sed -i "s|repository:.*|repository: ${{ secrets.DOCKER_USERNAME }}/gitops-app|" helm/gitops-app/values.yaml
+          sed -i "s|tag:.*|tag: $TAG|" helm/gitops-app/values.yaml
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.email "${{ secrets.GIT_EMAIL }}"
+          git config --global user.email "you@example.com"
+          git config --global user.name "github-actions"
+          git add helm/gitops-app/values.yaml
+          git commit -m "Update image tag to $TAG" || echo "No changes to commit"
+          git push
